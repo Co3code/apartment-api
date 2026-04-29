@@ -1,14 +1,17 @@
 <?php
-declare(strict_types=1);
+declare (strict_types = 1);
 
-class BookingModel {
+class BookingModel
+{
     private PDO $db;
 
-    public function __construct(PDO $db) {
+    public function __construct(PDO $db)
+    {
         $this->db = $db;
     }
 
-    public function createBooking(int $user_id, int $room_id, string $message): int {
+    public function createBooking(int $user_id, int $room_id, string $message): int
+    {
         $stmt = $this->db->prepare(
             "INSERT INTO bookings (user_id, room_id, message)
              VALUES (:user_id, :room_id, :message)"
@@ -16,12 +19,13 @@ class BookingModel {
         $stmt->execute([
             ':user_id' => $user_id,
             ':room_id' => $room_id,
-            ':message' => $message
+            ':message' => $message,
         ]);
         return (int) $this->db->lastInsertId();
     }
 
-    public function getUserBookings(int $user_id): array {
+    public function getUserBookings(int $user_id): array
+    {
         $stmt = $this->db->prepare(
             "SELECT b.id, b.status, b.message, b.created_at,
                     r.title AS room_title, r.price, r.location
@@ -35,7 +39,8 @@ class BookingModel {
         return $stmt->fetchAll();
     }
 
-    public function getAllBookings(): array {
+    public function getAllBookings(): array
+    {
         $stmt = $this->db->prepare(
             "SELECT b.id, b.status, b.message, b.created_at,
                     r.title AS room_title, r.price, r.location,
@@ -50,7 +55,8 @@ class BookingModel {
         return $stmt->fetchAll();
     }
 
-    public function updateBookingStatus(int $id, string $status): bool {
+    public function updateBookingStatus(int $id, string $status): bool
+    {
         $stmt = $this->db->prepare(
             "UPDATE bookings
              SET status = :status
@@ -58,12 +64,38 @@ class BookingModel {
         );
         $stmt->execute([
             ':status' => $status,
-            ':id'     => $id
+            ':id'     => $id,
         ]);
         return $stmt->rowCount() > 0;
     }
 
-    public function hasExistingBooking(int $user_id, int $room_id): bool {
+    public function getRoomIdByBooking(int $booking_id): int | false
+    {
+        $stmt = $this->db->prepare(
+            "SELECT room_id FROM bookings
+             WHERE id = :id AND deleted_at IS NULL
+             LIMIT 1"
+        );
+        $stmt->execute([':id' => $booking_id]);
+        $row = $stmt->fetch();
+        return $row ? (int) $row['room_id'] : false;
+    }
+
+    public function setRoomAvailability(int $room_id, int $is_available): void
+    {
+        $stmt = $this->db->prepare(
+            "UPDATE rooms
+             SET is_available = :is_available
+             WHERE id = :id"
+        );
+        $stmt->execute([
+            ':is_available' => $is_available,
+            ':id'           => $room_id,
+        ]);
+    }
+
+    public function hasExistingBooking(int $user_id, int $room_id): bool
+    {
         $stmt = $this->db->prepare(
             "SELECT id FROM bookings
              WHERE user_id = :user_id
@@ -74,7 +106,7 @@ class BookingModel {
         );
         $stmt->execute([
             ':user_id' => $user_id,
-            ':room_id' => $room_id
+            ':room_id' => $room_id,
         ]);
         return (bool) $stmt->fetch();
     }

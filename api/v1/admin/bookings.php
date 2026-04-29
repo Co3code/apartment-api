@@ -14,18 +14,26 @@ header('Content-Type: application/json');
 apply_cors();
 load_env($base . '/.env');
 
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Handle preflight
+if ($method === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 require_admin();
 
 $db         = (new Database())->connect();
 $controller = new BookingController($db);
 
-$method = $_SERVER['REQUEST_METHOD'];
-$id     = isset($_GET['id']) ? (int) $_GET['id'] : null;
+$id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
 if ($method === 'GET') {
     $controller->getAllBookings();
 } elseif ($method === 'PUT' && $id) {
     $controller->updateBookingStatus($id);
 } else {
+    require_once $base . '/utils/response.php';
     send_response(false, null, 'Method not allowed.', 405);
 }

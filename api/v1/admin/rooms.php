@@ -1,5 +1,5 @@
 <?php
-declare(strict_types=1);
+declare (strict_types = 1);
 
 $base = 'C:\\xampp\\htdocs\\apartment-api';
 
@@ -14,15 +14,20 @@ header('Content-Type: application/json');
 apply_cors();
 load_env($base . '/.env');
 
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Handle preflight
+if ($method === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 require_admin();
 
 $db         = (new Database())->connect();
 $controller = new AdminRoomController($db);
 
-$method = $_SERVER['REQUEST_METHOD'];
-
-// Extract room ID from URL if present (?id=1)
-$id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+$id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
 if ($method === 'POST') {
     $controller->addRoom();
@@ -31,5 +36,6 @@ if ($method === 'POST') {
 } elseif ($method === 'DELETE' && $id) {
     $controller->deleteRoom($id);
 } else {
+    require_once $base . '/utils/response.php';
     send_response(false, null, 'Method not allowed.', 405);
 }
